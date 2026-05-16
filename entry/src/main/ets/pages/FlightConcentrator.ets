@@ -20,8 +20,8 @@ interface Plane {
   price: number;
   logoUrl: ResourceStr;
   gradient: [string, string];
-  intro: string; // 机型简介
-  multiplier: number; // 收益系数
+  intro: string;
+  multiplier: number;
 }
 
 interface ScheduleItem {
@@ -31,18 +31,15 @@ interface ScheduleItem {
   endTime: Date;
   destIata: string;
   destName: string;
-  planeModel: string; // 执飞机型
-  expectedProfit: number; // 预期收益
+  planeModel: string;
+  expectedProfit: number;
 }
 
-// 飞机数据库：全系列机型与品牌分类 (已扩充完整波音、空客机队)
+// ================= 满血机队数据库 (保留渐变UI) =================
 const ALL_PLANES: Plane[] = [
-  // ================= COMAC (中国商飞) =================
   { model: 'ARJ21', brand: 'COMAC', price: 300, logoUrl: $r('app.media.comac_logo'), gradient: ['#f12711', '#f5af19'], multiplier: 1.0, intro: '中国首款自行研制的喷气式支线客机，适应高原与极端天气。' },
-  { model: 'C919', brand: 'COMAC', price: 1200, logoUrl: $r('app.media.comac_logo'), gradient: ['#f12711', '#f5af19'], multiplier: 1.5, intro: '中国首款按照国际通行适航标准自行研制、具有自主知识产权的喷气式干线客机。' },
+  { model: 'C919', brand: 'COMAC', price: 1200, logoUrl: $r('app.media.comac_logo'), gradient: ['#f12711', '#f5af19'], multiplier: 1.5, intro: '中国首款按照国际通行适航标准自行研制、具有自主知识产权的干线客机。' },
   { model: 'C929', brand: 'COMAC', price: 2500, logoUrl: $r('app.media.comac_logo'), gradient: ['#f12711', '#f5af19'], multiplier: 2.2, intro: '正在研制中的远程宽体客机，旨在打破远程宽体航线的垄断。' },
-
-  // ================= Boeing (波音) =================
   { model: '737-700', brand: 'Boeing', price: 700, logoUrl: $r('app.media.boeing_logo'), gradient: ['#36D1DC', '#5B86E5'], multiplier: 1.2, intro: '新一代波音737系列的基础型号，广受欢迎的单通道客机。' },
   { model: '737-800', brand: 'Boeing', price: 800, logoUrl: $r('app.media.boeing_logo'), gradient: ['#36D1DC', '#5B86E5'], multiplier: 1.3, intro: '波音737NG系列中最成功的型号，全球单通道客机的中流砥柱。' },
   { model: '737-900ER', brand: 'Boeing', price: 900, logoUrl: $r('app.media.boeing_logo'), gradient: ['#36D1DC', '#5B86E5'], multiplier: 1.4, intro: '波音737NG系列中航程最长、载客量最大的延程型号。' },
@@ -62,8 +59,6 @@ const ALL_PLANES: Plane[] = [
   { model: '777X', brand: 'Boeing', price: 5000, logoUrl: $r('app.media.boeing_logo'), gradient: ['#000046', '#1CB5E0'], multiplier: 2.8, intro: '波音最新一代旗舰宽体客机，拥有可折叠翼尖和惊人的复合材料机翼。' },
   { model: '747-400', brand: 'Boeing', price: 4000, logoUrl: $r('app.media.boeing_logo'), gradient: ['#141E30', '#243B55'], multiplier: 2.8, intro: '最经典的“空中女王”型号，统治远程民航市场数十载。' },
   { model: '747-8', brand: 'Boeing', price: 5500, logoUrl: $r('app.media.boeing_logo'), gradient: ['#141E30', '#243B55'], multiplier: 3.0, intro: '“空中女王”的最终型号，航空史上的不可磨灭的巨无霸偶像。' },
-
-  // ================= Airbus (空客) =================
   { model: 'A319', brand: 'Airbus', price: 700, logoUrl: $r('app.media.airbus_logo'), gradient: ['#8A2387', '#E94057'], multiplier: 1.2, intro: 'A320家族的缩短版，被誉为“高原雄鹰”。' },
   { model: 'A320ceo', brand: 'Airbus', price: 800, logoUrl: $r('app.media.airbus_logo'), gradient: ['#8A2387', '#E94057'], multiplier: 1.3, intro: '全球最畅销的单通道飞机之一，奠定了空客在窄体机市场的地位。' },
   { model: 'A320neo', brand: 'Airbus', price: 900, logoUrl: $r('app.media.airbus_logo'), gradient: ['#8A2387', '#E94057'], multiplier: 1.4, intro: '配备新型发动机和鲨鳍小翼的A320，燃油效率大幅提升。' },
@@ -80,27 +75,68 @@ const ALL_PLANES: Plane[] = [
   { model: 'A380-800', brand: 'Airbus', price: 7000, logoUrl: $r('app.media.airbus_logo'), gradient: ['#1D2B64', '#F8CDDA'], multiplier: 4.0, intro: '双层巨无霸，世界上最大的民航客机，航空工程的巅峰之作。' }
 ];
 
+// ================= 55个全国机场矩阵 =================
 const ALL_AIRPORTS: Airport[] = [
+  { name: '广州白云', iata: 'CAN', time: 0, isPremium: true, lng: 113.29, lat: 23.39 },
   { name: '北京首都', iata: 'PEK', time: 180, isPremium: true, lng: 116.58, lat: 40.08 },
-  { name: '上海浦东', iata: 'PVG', time: 135, isPremium: true, lng: 121.80, lat: 31.14 },
   { name: '北京大兴', iata: 'PKX', time: 185, isPremium: true, lng: 116.41, lat: 39.51 },
+  { name: '上海浦东', iata: 'PVG', time: 135, isPremium: true, lng: 121.80, lat: 31.14 },
+  { name: '上海虹桥', iata: 'SHA', time: 130, isPremium: true, lng: 121.33, lat: 31.19 },
   { name: '深圳宝安', iata: 'SZX', time: 40, isPremium: true, lng: 113.81, lat: 22.64 },
   { name: '成都天府', iata: 'TFU', time: 145, isPremium: true, lng: 104.44, lat: 30.27 },
+  { name: '成都双流', iata: 'CTU', time: 140, isPremium: true, lng: 103.94, lat: 30.57 },
   { name: '西安咸阳', iata: 'XIY', time: 155, isPremium: true, lng: 108.75, lat: 34.45 },
-  { name: '广州白云', iata: 'CAN', time: 0, isPremium: true, lng: 113.29, lat: 23.39 },
   { name: '杭州萧山', iata: 'HGH', time: 120, isPremium: true, lng: 120.43, lat: 30.23 },
   { name: '重庆江北', iata: 'CKG', time: 140, isPremium: true, lng: 106.64, lat: 29.72 },
   { name: '南京禄口', iata: 'NKG', time: 135, isPremium: true, lng: 118.86, lat: 31.74 },
-  { name: '武汉天河', iata: 'WUH', time: 105, isPremium: true, lng: 114.21, lat: 30.78 }
-  // (受限于显示长度，可自行补充剩余机场数据，格式同上)
+  { name: '武汉天河', iata: 'WUH', time: 105, isPremium: true, lng: 114.21, lat: 30.78 },
+  { name: '昆明长水', iata: 'KMG', time: 160, isPremium: true, lng: 102.93, lat: 25.10 },
+  { name: '厦门高崎', iata: 'XMN', time: 80, isPremium: true, lng: 118.13, lat: 24.54 },
+  { name: '郑州新郑', iata: 'CGO', time: 130, isPremium: true, lng: 113.84, lat: 34.52 },
+  { name: '长沙黄花', iata: 'CSX', time: 80, isPremium: true, lng: 113.22, lat: 28.19 },
+  { name: '青岛胶东', iata: 'TAO', time: 170, isPremium: true, lng: 120.08, lat: 36.26 },
+  { name: '天津滨海', iata: 'TSN', time: 175, isPremium: true, lng: 117.34, lat: 39.12 },
+  { name: '沈阳桃仙', iata: 'SHE', time: 200, isPremium: true, lng: 123.48, lat: 41.64 },
+  { name: '哈尔滨太平', iata: 'HRB', time: 240, isPremium: true, lng: 126.25, lat: 45.62 },
+  { name: '乌鲁木齐', iata: 'URC', time: 300, isPremium: true, lng: 87.47, lat: 43.90 },
+
+  // 免费支线/次级枢纽 (isPremium: false)
+  { name: '珠海金湾', iata: 'ZUH', time: 30, isPremium: false, lng: 113.37, lat: 22.01 },
+  { name: '揭阳潮汕', iata: 'SWA', time: 45, isPremium: false, lng: 116.51, lat: 23.55 },
+  { name: '湛江吴川', iata: 'ZJA', time: 55, isPremium: false, lng: 110.46, lat: 21.42 },
+  { name: '梅州梅县', iata: 'MXZ', time: 40, isPremium: false, lng: 116.10, lat: 24.26 },
+  { name: '海口美兰', iata: 'HAK', time: 65, isPremium: false, lng: 110.46, lat: 19.93 },
+  { name: '三亚凤凰', iata: 'SYX', time: 90, isPremium: false, lng: 109.41, lat: 18.30 },
+  { name: '桂林两江', iata: 'KWL', time: 70, isPremium: false, lng: 110.04, lat: 25.22 },
+  { name: '北海福成', iata: 'BHY', time: 85, isPremium: false, lng: 109.29, lat: 21.54 },
+  { name: '南宁吴圩', iata: 'NNG', time: 75, isPremium: false, lng: 108.11, lat: 22.60 },
+  { name: '贵阳龙洞堡', iata: 'KWE', time: 100, isPremium: false, lng: 106.80, lat: 26.53 },
+  { name: '泉州晋江', iata: 'JJN', time: 75, isPremium: false, lng: 118.59, lat: 24.80 },
+  { name: '福州长乐', iata: 'FOC', time: 90, isPremium: false, lng: 119.66, lat: 25.93 },
+  { name: '武夷山', iata: 'WUS', time: 95, isPremium: false, lng: 118.00, lat: 27.70 },
+  { name: '赣州黄金', iata: 'KOW', time: 60, isPremium: false, lng: 114.78, lat: 25.85 },
+  { name: '南昌昌北', iata: 'KHN', time: 80, isPremium: false, lng: 115.90, lat: 28.86 },
+  { name: '井冈山', iata: 'JGS', time: 70, isPremium: false, lng: 114.74, lat: 26.85 },
+  { name: '遵义新舟', iata: 'ZYI', time: 110, isPremium: false, lng: 107.24, lat: 27.81 },
+  { name: '张家界', iata: 'DYG', time: 90, isPremium: false, lng: 110.45, lat: 29.10 },
+  { name: '宜昌三峡', iata: 'YIH', time: 110, isPremium: false, lng: 111.48, lat: 30.55 },
+  { name: '合肥新桥', iata: 'HFE', time: 110, isPremium: false, lng: 116.98, lat: 31.99 },
+  { name: '宁波栎社', iata: 'NGB', time: 110, isPremium: false, lng: 121.46, lat: 29.82 },
+  { name: '温州龙湾', iata: 'WNZ', time: 100, isPremium: false, lng: 120.85, lat: 27.91 },
+  { name: '济南遥墙', iata: 'TNA', time: 150, isPremium: false, lng: 117.21, lat: 36.85 },
+  { name: '太原武宿', iata: 'TYN', time: 160, isPremium: false, lng: 112.63, lat: 37.75 },
+  { name: '石家庄', iata: 'SJW', time: 160, isPremium: false, lng: 114.69, lat: 38.28 },
+  { name: '呼和浩特', iata: 'HET', time: 190, isPremium: false, lng: 111.82, lat: 40.85 },
+  { name: '兰州中川', iata: 'LHW', time: 190, isPremium: false, lng: 103.62, lat: 36.51 },
+  { name: '银川河东', iata: 'INC', time: 180, isPremium: false, lng: 106.39, lat: 38.32 },
+  { name: '丽江三义', iata: 'LJG', time: 165, isPremium: false, lng: 100.25, lat: 26.68 },
+  { name: '大理荒草坝', iata: 'DLU', time: 155, isPremium: false, lng: 100.32, lat: 25.65 },
+  { name: '西双版纳', iata: 'JHG', time: 170, isPremium: false, lng: 100.76, lat: 21.97 },
+  { name: '大连周水子', iata: 'DLC', time: 185, isPremium: false, lng: 121.54, lat: 38.96 },
+  { name: '烟台蓬莱', iata: 'YNT', time: 175, isPremium: false, lng: 120.98, lat: 37.66 }
 ];
 
-// ==========================================
-// 辅助函数与全局样式
-// ==========================================
-function padZero(num: number): string {
-  return num < 10 ? '0' + num : num.toString();
-}
+function padZero(num: number): string { return num < 10 ? '0' + num : num.toString(); }
 
 @Styles function glassEffect() {
   .backgroundColor('rgba(255, 255, 255, 0.12)')
@@ -111,54 +147,7 @@ function padZero(num: number): string {
 }
 
 // ==========================================
-// 弹窗1：创建航空公司
-// ==========================================
-@CustomDialog
-struct InitDialog {
-  controller: CustomDialogController;
-  @State name: string = '';
-  @State selectedPlane: string = 'ARJ21';
-  onConfirm: (name: string, plane: string) => void = () => {};
-
-  build() {
-    Column({ space: 20 }) {
-      Text('组建你的航空公司').fontSize(24).fontWeight(FontWeight.Bold).fontColor('#FFF')
-
-      TextInput({ placeholder: '输入公司名称，例如：寰宇航空' })
-        .onChange(v => this.name = v).width('100%').height(55)
-        .backgroundColor('rgba(255, 255, 255, 0.2)')
-        .fontColor('#FFF').placeholderColor('rgba(255,255,255,0.5)')
-
-      Text('免费分配初始机队').width('100%').fontColor('rgba(255, 255, 255, 0.8)')
-      Row({ space: 20 }) {
-        Column({ space: 10 }) {
-          Text('🇨🇳').fontSize(35)
-          Text('ARJ21').fontWeight(this.selectedPlane === 'ARJ21' ? FontWeight.Bold : FontWeight.Normal).fontColor('#FFF')
-        }.onClick(() => this.selectedPlane = 'ARJ21')
-        .border({ width: this.selectedPlane === 'ARJ21' ? 2 : 0, color: '#00E5FF' }).padding(15).borderRadius(15)
-        .backgroundColor(this.selectedPlane === 'ARJ21' ? 'rgba(0,229,255,0.2)' : 'transparent')
-
-        Column({ space: 10 }) {
-          Text('🇪🇺').fontSize(35)
-          Text('A320ceo').fontWeight(this.selectedPlane === 'A320ceo' ? FontWeight.Bold : FontWeight.Normal).fontColor('#FFF')
-        }.onClick(() => this.selectedPlane = 'A320ceo')
-        .border({ width: this.selectedPlane === 'A320ceo' ? 2 : 0, color: '#00E5FF' }).padding(15).borderRadius(15)
-        .backgroundColor(this.selectedPlane === 'A320ceo' ? 'rgba(0,229,255,0.2)' : 'transparent')
-      }
-
-      Button('开始航向星辰')
-        .width('100%').height(55).backgroundColor('#00E5FF').fontColor('#000').fontWeight(FontWeight.Bold)
-        .enabled(this.name.length > 0)
-        .onClick(() => {
-          this.onConfirm(this.name, this.selectedPlane);
-          this.controller.close();
-        }).margin({ top: 10 })
-    }.padding(30).glassEffect()
-  }
-}
-
-// ==========================================
-// 弹窗2：机型百科与购机确认
+// 弹窗：机型百科与购机确认
 // ==========================================
 @CustomDialog
 struct PlaneIntroDialog {
@@ -169,7 +158,6 @@ struct PlaneIntroDialog {
 
   build() {
     Column({ space: 15 }) {
-      // 完整展示 Logo
       Image(this.plane.logoUrl).width('80%').height(70).objectFit(ImageFit.Contain)
         .backgroundColor('rgba(255,255,255,0.9)').borderRadius(15).padding(10)
 
@@ -184,7 +172,6 @@ struct PlaneIntroDialog {
         Text(`x${this.plane.multiplier.toFixed(1)}`).fontColor('#FFD700').fontWeight(FontWeight.Bold).fontSize(20)
       }.width('100%').margin({ top: 10, bottom: 15 })
 
-      // 交互按钮重构：可选择购买或取消
       Row({ space: 15 }) {
         Button('取消').layoutWeight(1).height(50).backgroundColor('rgba(255,255,255,0.2)').fontColor('#FFF')
           .onClick(() => this.controller.close())
@@ -199,7 +186,6 @@ struct PlaneIntroDialog {
             this.controller.close();
           })
       }.width('100%')
-
     }.padding(25).glassEffect()
   }
 }
@@ -210,99 +196,143 @@ struct PlaneIntroDialog {
 @Entry
 @Component
 struct FlightConcentrator {
-  // 页面状态：0-首页, 1-日历, 2-任务设置, 3-路线选择, 4-航班列表, 5-飞行中, 6-我的简报, 7-商店, 8-结算界面, 9-执飞机型选择
-  @State currentPage: number = 0;
+  @State currentPage: number = 10;
 
-  @State airlineName: string = '未命名航空';
+  // 认证状态控制：10-系统入口 (统一管理登录/注册)，0~9是业务页面
+  @State authMode: 'login' | 'register' | 'entry' = 'entry';
+
+  // 认证信息
+  @State sysUsername: string = '';
+  @State sysPassword: string = '';
+  @State airlineName: string = '';
+  @State airlineCode: string = '';
+
+  // 登录/注册表单
+  @State formUser: string = '';
+  @State formPwd: string = '';
+  @State formAirName: string = '';
+  @State formAirCode: string = '';
+  @State authErrorMsg: string = '';
+
+  // 业务数据
   @State coinBalance: number = 0;
   @State airportLevel: number = 1;
   @State totalFocusMinutes: number = 0;
   @State unlockedAirports: string[] = [];
   @State unlockedRoutes: string[] = [];
   @State ownedPlanes: string[] = [];
-
   @State scheduleList: Array<ScheduleItem> = [];
+
+  // 临时状态
   @State displayYear: number = new Date().getFullYear();
   @State displayMonth: number = new Date().getMonth();
   @State daysInMonthList: (number | null)[] = [];
   @State selectedDate: Date = new Date();
-
   @State tempTaskType: string = '';
   @State tempStartTime: Date = new Date();
   @State tempEndTime: Date = new Date();
   @State candidateAirports: Airport[] = [];
   @State selectedAirport: Airport | null = null;
-
   @State targetPurchaseName: string = '';
   @State targetPurchasePrice: number = 0;
   @State targetPurchaseType: 'airport' | 'plane' = 'airport';
   @State targetPurchaseId: string = '';
 
+  // 执飞状态
   @State activeFlight: ScheduleItem = { id:0, taskType:'', startTime:new Date(), endTime:new Date(), destIata:'', destName:'', planeModel:'', expectedProfit:0 };
   @State remainingSeconds: number = 0;
+  @State totalFlightSeconds: number = 1;
+  @State currentAltitude: number = 0;
+  @State currentSpeed: number = 0;
   private timerId: number = -1;
 
   private webController: webview.WebviewController = new webview.WebviewController();
   private context = getContext(this) as common.UIAbilityContext;
   private pref = preferences.getPreferencesSync(this.context, { name: 'aviation_pro_prefs' });
-
-  private initDialogController: CustomDialogController = new CustomDialogController({
-    builder: InitDialog({
-      onConfirm: (name: string, plane: string) => {
-        this.airlineName = name;
-        this.ownedPlanes = [plane];
-        this.saveAllData();
-      }
-    }),
-    autoCancel: false, alignment: DialogAlignment.Center, customStyle: true
-  });
-
-  // 用于动态加载详情页的数据
   private introDialog: CustomDialogController | null = null;
 
   aboutToAppear() {
-    this.loadAllData();
     this.updateCalendarDays();
-    if (this.airlineName === '未命名航空') {
-      setTimeout(() => { this.initDialogController.open(); }, 100);
+    this.checkAuthStatus();
+  }
+
+  // 初始化与鉴权
+  checkAuthStatus() {
+    this.sysUsername = this.pref.getSync('sys_username', '') as string;
+    if (!this.sysUsername) {
+      // 没账号，进入选择入口状态
+      this.currentPage = 10;
+      this.authMode = 'entry';
+    } else {
+      // 有缓存账号，引导至登录页（让用户输密码）
+      this.currentPage = 10;
+      this.authMode = 'login';
+      this.sysPassword = this.pref.getSync('sys_password', '') as string;
+      this.airlineName = this.pref.getSync('airline_name', '') as string;
+      this.airlineCode = this.pref.getSync('airline_code', '') as string;
     }
   }
 
-  loadAllData() {
-    this.airlineName = this.pref.getSync('airline_name', '未命名航空') as string;
+  loadBusinessData() {
     this.coinBalance = this.pref.getSync('coin_balance', 0) as number;
     this.airportLevel = this.pref.getSync('airport_level', 1) as number;
     this.totalFocusMinutes = this.pref.getSync('total_focus', 0) as number;
-    this.unlockedAirports = JSON.parse(this.pref.getSync('unlocked_airports', '[]') as string);
-    this.unlockedRoutes = JSON.parse(this.pref.getSync('unlocked_routes', '[]') as string);
-    this.ownedPlanes = JSON.parse(this.pref.getSync('owned_planes', '[]') as string);
+
+    let freeAirports = ALL_AIRPORTS.filter(a => !a.isPremium).map(a => a.iata);
+    let savedAirports: string[] = JSON.parse(this.pref.getSync('unlocked_airports', '[]') as string);
+    this.unlockedAirports = Array.from(new Set(savedAirports.concat(freeAirports)));
+
+    this.unlockedRoutes = JSON.parse(this.pref.getSync('unlocked_routes', '[]') as string) as string[];
+    this.ownedPlanes = JSON.parse(this.pref.getSync('owned_planes', '[]') as string) as string[];
+
+    // 【强制修复】无论何时读取，如果机库为空，强制发放 737-800 和 ARJ21
+    if (!this.ownedPlanes || this.ownedPlanes.length === 0) {
+      this.ownedPlanes = ["737-800", "ARJ21"]; // 这里给你加上了 737
+      // 必须立刻保存，覆盖掉本地错误的空数据
+      this.pref.putSync('owned_planes', JSON.stringify(this.ownedPlanes));
+      this.pref.flushSync();
+    }
 
     let listJson = this.pref.getSync('flight_list', '[]') as string;
     let rawList: Record<string, Object>[] = JSON.parse(listJson);
     this.scheduleList = rawList.map((i: Record<string, Object>) => ({
       id: i.id as number,
       taskType: i.taskType as string,
-      startTime: new Date(i.startTime as string),
-      endTime: new Date(i.endTime as string),
       destIata: i.destIata as string,
       destName: i.destName as string,
-      planeModel: (i.planeModel as string) || 'A320ceo',
-      expectedProfit: (i.expectedProfit as number) || 0
+      planeModel: i.planeModel as string,
+      expectedProfit: i.expectedProfit as number,
+      startTime: new Date(i.startTime as string),
+      endTime: new Date(i.endTime as string)
     } as ScheduleItem));
   }
 
   saveAllData() {
+    this.pref.putSync('sys_username', this.sysUsername);
+    this.pref.putSync('sys_password', this.sysPassword);
     this.pref.putSync('airline_name', this.airlineName);
+    this.pref.putSync('airline_code', this.airlineCode);
     this.pref.putSync('coin_balance', this.coinBalance);
     this.pref.putSync('airport_level', this.airportLevel);
     this.pref.putSync('total_focus', this.totalFocusMinutes);
-    this.pref.putSync('unlocked_airports', JSON.stringify(this.unlockedAirports));
+    let premiumUnlocked = this.unlockedAirports.filter(iata => ALL_AIRPORTS.find(a => a.iata === iata)?.isPremium);
+    this.pref.putSync('unlocked_airports', JSON.stringify(premiumUnlocked));
     this.pref.putSync('unlocked_routes', JSON.stringify(this.unlockedRoutes));
     this.pref.putSync('owned_planes', JSON.stringify(this.ownedPlanes));
     this.pref.putSync('flight_list', JSON.stringify(this.scheduleList));
     this.pref.flushSync();
   }
 
+  resetSystem() {
+    this.pref.clearSync();
+    this.pref.flushSync();
+    this.sysUsername = ''; this.sysPassword = '';
+    this.formUser = ''; this.formPwd = ''; this.formAirName = ''; this.formAirCode = '';
+    this.currentPage = 10;
+    this.authMode = 'entry'; // 清理后返回主入口
+  }
+
+  // ================= 核心业务补全 =================
   updateCalendarDays() {
     let firstDayOfMonth = new Date(this.displayYear, this.displayMonth, 1).getDay();
     let daysCount = new Date(this.displayYear, this.displayMonth + 1, 0).getDate();
@@ -318,11 +348,11 @@ struct FlightConcentrator {
     this.candidateAirports = ALL_AIRPORTS.filter(a => a.time > 0 && Math.abs(a.time - duration) <= 40);
   }
 
-  // 地图 HTML
+  // ================= 地图 Web GIS =================
   generateMapHtml(): string {
     let markers = this.candidateAirports.map(apt => {
       let isLocked = apt.isPremium && !this.unlockedAirports.includes(apt.iata);
-      let color = isLocked ? '#999999' : '#00E5FF';
+      let color = isLocked ? '#999999' : (apt.isPremium ? '#FFD700' : '#00E5FF');
       return `{ position: [${apt.lng}, ${apt.lat}], title: '${apt.iata}', color: '${color}' }`;
     }).join(',');
 
@@ -335,33 +365,23 @@ struct FlightConcentrator {
         <style>
             html, body, #container { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f2027;}
             .custom-marker {
-                background: rgba(0,0,0,0.8); border: 2px solid; border-radius: 8px;
-                padding: 4px 8px; font-weight: bold; font-size: 12px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.6); backdrop-filter: blur(5px); color: #FFF;
+                background: rgba(255,255,255,0.1); border: 1px solid; border-radius: 12px;
+                padding: 4px 10px; font-weight: 500; font-size: 12px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px); color: #FFF;
             }
         </style>
-        <script type="text/javascript">
-          window._AMapSecurityConfig = { securityJsCode: "16ca0d00fddb10c5bc61eb6de4ab2f3a" }
-        </script>
         <script src="https://webapi.amap.com/maps?v=2.0&key=038b3400dd8b54da0a149c95eb9c7d42"></script>
     </head>
     <body>
     <div id="container"></div>
     <script>
-        var map = new AMap.Map('container', {
-            zoom: 4,
-            center: [110.0, 32.0],
-            mapStyle: 'amap://styles/darkblue'
-        });
-
+        var map = new AMap.Map('container', { zoom: 4, center: [105.0, 35.0], mapStyle: 'amap://styles/darkblue' });
         var canMarker = new AMap.Marker({
             position: [113.2988, 23.3924],
-            content: '<div class="custom-marker" style="border-color:#4CAF50;">CAN (广州)</div>',
-            offset: new AMap.Pixel(-35, -15),
-            zIndex: 999
+            content: '<div class="custom-marker" style="border-color:#FFF; color:#FFF; font-weight:bold;">CAN (总部)</div>',
+            offset: new AMap.Pixel(-35, -15), zIndex: 999
         });
         map.add(canMarker);
-
         var candidates = [${markers}];
         candidates.forEach(function(item) {
             var marker = new AMap.Marker({
@@ -370,13 +390,9 @@ struct FlightConcentrator {
                 offset: new AMap.Pixel(-20, -10)
             });
             map.add(marker);
-
             var polyline = new AMap.Polyline({
-                path: [ [113.2988, 23.3924], item.position ],
-                strokeColor: item.color,
-                strokeWeight: 3,
-                strokeStyle: 'dashed',
-                lineJoin: 'round'
+                path: [ [113.2988, 23.3924], item.position ], strokeColor: item.color,
+                strokeWeight: 2, strokeStyle: 'dashed', lineJoin: 'round'
             });
             map.add(polyline);
         });
@@ -386,14 +402,16 @@ struct FlightConcentrator {
     </html>`;
   }
 
+  // ================= 根路由渲染 =================
   build() {
     Stack() {
-      Column()
-        .width('100%').height('100%')
+      // 沉浸式深空高级渐变背景
+      Column().width('100%').height('100%')
         .linearGradient({ direction: GradientDirection.Bottom, colors: [['#0f2027', 0.0], ['#203a43', 0.5], ['#2c5364', 1.0]] })
 
       Column() {
-        if (this.currentPage === 0) this.HomeView();
+        if (this.currentPage === 10) this.AuthSystemView();
+        else if (this.currentPage === 0) this.HomeView();
         else if (this.currentPage === 1) this.CalendarView();
         else if (this.currentPage === 2) this.TaskSettingView();
         else if (this.currentPage === 3) this.RoutePickerView();
@@ -407,6 +425,86 @@ struct FlightConcentrator {
     }
   }
 
+  // ================= 模块化：认证系统入口 =================
+  @Builder InputField(placeholder: string, type: InputType, onChange: (v: string) => void) {
+    TextInput({ placeholder: placeholder })
+      .type(type).onChange(onChange).width('100%').height(60)
+      .backgroundColor('rgba(255, 255, 255, 0.08)').fontColor('#FFF')
+      .placeholderColor('rgba(255,255,255,0.4)').borderRadius(16)
+      .border({ width: 1, color: 'rgba(255, 255, 255, 0.2)' })
+  }
+
+  @Builder AuthSystemView() {
+    Column({ space: 30 }) {
+      Text(this.authMode === 'entry' ? '航司调度中心' : (this.authMode === 'login' ? '机长登录' : '新航司入网'))
+        .fontSize(32).fontWeight(FontWeight.Bold).fontColor('#FFF').margin({ top: 80, bottom: 20 })
+
+      if (this.authMode === 'entry') {
+        Column({ space: 20 }) {
+          Button('登录已有账号')
+            .width('85%').height(60).backgroundColor('#FFF').fontColor('#000').fontWeight(FontWeight.Medium).borderRadius(30)
+            .onClick(() => { this.authMode = 'login'; this.authErrorMsg = ''; })
+
+          Button('注册新航司账号')
+            .width('85%').height(60).backgroundColor('rgba(255,255,255,0.15)').fontColor('#FFF').borderRadius(30)
+            .border({ width: 1, color: 'rgba(255,255,255,0.3)' })
+            .onClick(() => { this.authMode = 'register'; this.authErrorMsg = ''; })
+        }
+      } else if (this.authMode === 'register') {
+        Column({ space: 15 }) {
+          this.InputField('机长用户名', InputType.Normal, v => this.formUser = v)
+          this.InputField('设置密码', InputType.Password, v => this.formPwd = v)
+          this.InputField('航空公司名称', InputType.Normal, v => this.formAirName = v)
+          this.InputField('航司三字代码 (如：UAA)', InputType.Normal, v => this.formAirCode = v.toUpperCase())
+
+          if (this.authErrorMsg) Text(this.authErrorMsg).fontColor('#FF5252').fontSize(14)
+
+          Button('确认注册并登录')
+            .width('100%').height(60).backgroundColor('#00E5FF').fontColor('#000').borderRadius(30).margin({ top: 10 })
+            .onClick(() => {
+              if (!this.formUser || !this.formPwd || !this.formAirName || !this.formAirCode) {
+                this.authErrorMsg = '请完整填写所有信息';
+              } else {
+                this.sysUsername = this.formUser;
+                this.sysPassword = this.formPwd;
+                this.airlineName = this.formAirName;
+                this.airlineCode = this.formAirCode;
+                this.ownedPlanes = ["ARJ21", "A320neo"]; // 注册赠送初始机队
+                this.loadBusinessData();
+                this.saveAllData();
+                this.currentPage = 0;
+              }
+            })
+          Text('返回选择').fontColor('rgba(255,255,255,0.5)').fontSize(14).onClick(() => this.authMode = 'entry')
+        }.width('85%')
+
+      } else if (this.authMode === 'login') {
+        Column({ space: 15 }) {
+          this.InputField('机长用户名', InputType.Normal, v => this.formUser = v)
+          this.InputField('输入密码', InputType.Password, v => this.formPwd = v)
+
+          if (this.authErrorMsg) Text(this.authErrorMsg).fontColor('#FF5252').fontSize(14)
+
+          Button('验证起飞')
+            .width('100%').height(60).backgroundColor('#00E5FF').fontColor('#000').borderRadius(30).margin({ top: 10 })
+            .onClick(() => {
+              if (this.formUser === this.sysUsername && this.formPwd === this.sysPassword && this.sysUsername !== '') {
+                this.authErrorMsg = '';
+                this.loadBusinessData();
+                this.currentPage = 0;
+              } else {
+                this.authErrorMsg = '机长身份验证失败，请核对信息';
+              }
+            })
+          Text('没有账号？去注册').fontColor('rgba(255,255,255,0.5)').fontSize(14).onClick(() => this.authMode = 'register')
+          Text('返回选择').fontColor('rgba(255,255,255,0.5)').fontSize(14).onClick(() => this.authMode = 'entry').margin({ top: 10 })
+        }.width('85%')
+      }
+    }.width('100%').height('100%')
+  }
+
+
+  // ================= 页面组件 =================
   @Builder StepHeader(title: string, prevPage: number) {
     Row() {
       Button('←').width(50).height(50).backgroundColor('rgba(255,255,255,0.15)').fontColor('#FFF').borderRadius(15).fontSize(20)
@@ -419,12 +517,14 @@ struct FlightConcentrator {
   @Builder HomeView() {
     Column({ space: 25 }) {
       Column({ space: 15 }) {
-        Text(this.airlineName).fontSize(30).fontWeight(FontWeight.Bold).fontColor('#FFF').letterSpacing(2)
-        Row({ space: 20 }) {
-          Text(`💰 ${this.coinBalance}`).fontColor('#FFD700').fontWeight(FontWeight.Bold).fontSize(16)
-          Text(`✈️ 机队: ${this.ownedPlanes.length}`).fontColor('#E0F7FA').fontSize(16)
-          Text(`📊 航线: ${this.unlockedRoutes.length}`).fontColor('#E0F7FA').fontSize(16)
-        }
+        Text(`${this.airlineName} (${this.airlineCode})`).fontSize(26).fontWeight(FontWeight.Bold).fontColor('#FFF').letterSpacing(1)
+        Text(`欢迎登机，${this.sysUsername} 机长`).fontSize(16).fontColor('rgba(255,255,255,0.6)')
+        Divider().color('rgba(255,255,255,0.1)').margin({ top: 10, bottom: 10 })
+        Row() {
+          this.DataStat('资金结余', `💰 ${this.coinBalance}`)
+          this.DataStat('在役机队', `✈️ ${this.ownedPlanes.length}`)
+          this.DataStat('通航城市', `📍 ${this.unlockedRoutes.length}`)
+        }.width('100%').justifyContent(FlexAlign.SpaceBetween)
       }.width('92%').padding(35).margin({ top: 70 }).glassEffect()
 
       Column({ space: 20 }) {
@@ -436,6 +536,13 @@ struct FlightConcentrator {
         }.width('90%')
       }.margin({ top: 30 })
     }.width('100%')
+  }
+
+  @Builder DataStat(label: string, val: string) {
+    Column({ space: 8 }) {
+      Text(val).fontColor('#FFF').fontWeight(FontWeight.Bold).fontSize(16)
+      Text(label).fontColor('rgba(255,255,255,0.5)').fontSize(12)
+    }.alignItems(HorizontalAlign.Start)
   }
 
   @Builder MenuButton(label: string, bg: string, click: () => void, textCol: string = '#FFF', w: string = '90%') {
@@ -546,35 +653,63 @@ struct FlightConcentrator {
     }.width('100%').height('100%')
   }
 
+  // ==========================================
+  // 【从这里开始替换原来的 PlanePickerForFlightView】
+  // ==========================================
   @Builder PlanePickerForFlightView() {
     Column({ space: 20 }) {
       this.StepHeader('最后一步：确认执飞机型', 3)
       Text(`航线: CAN ➔ ${this.selectedAirport?.iata} | 时长: ${this.selectedAirport?.time} 分钟`).fontColor('#00E5FF').width('90%')
 
+      Text('👇 点击选择下方机型，立刻生成航班计划').fontColor('rgba(255,255,255,0.7)').fontSize(14).width('90%')
+
       List({ space: 15 }) {
-        ForEach(ALL_PLANES.filter(p => this.ownedPlanes.includes(p.model)), (p: Plane) => {
+        // 【核心绝杀】不再信任本地缓存，通过 getSafePlanes 拿飞机，绝不让这里为空！
+        ForEach(this.getSafePlanes(), (p: Plane) => {
           ListItem() {
             Row() {
-              Image(p.logoUrl).width(50).height(50).objectFit(ImageFit.Contain).backgroundColor('rgba(255,255,255,0.9)').borderRadius(10).padding(5).margin({ right: 15 })
+              Image(p.logoUrl).width(60).height(50).objectFit(ImageFit.Contain).backgroundColor('rgba(255,255,255,0.9)').borderRadius(10).padding(5).margin({ right: 15 })
               Column() {
-                Text(p.model).fontColor('#FFF').fontWeight(FontWeight.Bold).fontSize(18)
-                Text(`倍率: x${p.multiplier.toFixed(1)}`).fontColor('#FFD700').fontSize(14)
+                Text(p.model).fontColor('#FFF').fontWeight(FontWeight.Bold).fontSize(20)
+                Text(`倍率: x${p.multiplier.toFixed(1)}`).fontColor('#FFD700').fontSize(14).margin({ top: 5 })
               }.alignItems(HorizontalAlign.Start)
               Blank()
               Column() {
                 Text('预期收益').fontColor('rgba(255,255,255,0.6)').fontSize(12)
-                Text(`💰 ${Math.floor((this.selectedAirport?.time || 0) * p.multiplier)}`).fontColor('#00E5FF').fontWeight(FontWeight.Bold).fontSize(16)
-              }.alignItems(HorizontalAlign.End).margin({ right: 15 })
-
-              Button('派飞').backgroundColor('#4CAF50').onClick(() => this.confirmFlight(p))
-            }.width('100%').padding(20).glassEffect()
+                Text(`💰 ${Math.floor((this.selectedAirport?.time || 0) * p.multiplier)}`).fontColor('#00E5FF').fontWeight(FontWeight.Bold).fontSize(18).margin({ top: 5 })
+              }.alignItems(HorizontalAlign.End)
+            }
+            .width('100%').padding(20).glassEffect()
+            .border({ width: 2, color: 'rgba(0, 229, 255, 0.4)' })
           }
+          // 点击整张卡片直接起飞
+          .onClick(() => this.confirmFlight(p))
         })
       }.layoutWeight(1).width('92%')
     }.height('100%')
   }
 
+  // ==========================================
+  // 【新增防空大招】安全获取机库数据
+  // ==========================================
+  getSafePlanes(): Plane[] {
+    let availablePlanes = ALL_PLANES.filter(p => this.ownedPlanes.includes(p.model));
+    // 如果匹配出来的飞机是 0 架（证明本地缓存坏了，名字对不上），无条件送 737 和 ARJ21 兜底！
+    if (availablePlanes.length === 0) {
+      return ALL_PLANES.filter(p => ["737-800", "ARJ21"].includes(p.model));
+    }
+    return availablePlanes;
+  }
+
+  // ==========================================
+  // 【替换原来的 confirmFlight 方法】
+  // ==========================================
   confirmFlight(p: Plane) {
+    // 【自动修复】如果你点了兜底送的 737，立刻把它永久写入你的机库，修复你的坏缓存！
+    if (!this.ownedPlanes.includes(p.model)) {
+      this.ownedPlanes.push(p.model);
+    }
+
     let profit = Math.floor((this.selectedAirport?.time || 0) * p.multiplier);
     this.scheduleList.push({
       id: Date.now(),
@@ -589,8 +724,10 @@ struct FlightConcentrator {
     this.saveAllData();
     this.currentPage = 4;
   }
+  // ==========================================
+  // 【替换到 confirmFlight 结束为止】
+  // ==========================================
 
-  // 优化点：增加删除计划功能
   @Builder FlightListView() {
     Column() {
       this.StepHeader('航班调度表', 0)
@@ -613,8 +750,7 @@ struct FlightConcentrator {
                 Row() {
                   Text(`收益预测: 💰${item.expectedProfit}`).fontColor('#AAA').fontSize(14)
                   Blank()
-                  // 新增：删除计划按钮
-                  Button('删除计划').height(38).backgroundColor('rgba(255, 77, 79, 0.8)').margin({ right: 10 })
+                  Button('取消').height(38).backgroundColor('rgba(255, 77, 79, 0.8)').margin({ right: 10 })
                     .onClick(() => this.deleteFlight(item.id))
                   Button('立刻起飞').height(38).backgroundColor('#4CAF50').onClick(() => this.startFlight(item))
                 }.width('100%').margin({ top: 15 })
@@ -635,17 +771,30 @@ struct FlightConcentrator {
     this.activeFlight = item;
     let durationMs = item.endTime.getTime() - item.startTime.getTime();
     if (durationMs <= 0) durationMs += 24 * 3600 * 1000;
-    this.remainingSeconds = Math.floor(durationMs / 1000);
+    this.totalFlightSeconds = Math.floor(durationMs / 1000);
+    this.remainingSeconds = this.totalFlightSeconds;
     this.currentPage = 5;
+
+    this.currentAltitude = 0;
+    this.currentSpeed = 0;
 
     if (this.timerId !== -1) clearInterval(this.timerId);
     this.timerId = setInterval(() => {
       if (this.remainingSeconds > 0) {
         this.remainingSeconds--;
+        let progress = 1 - (this.remainingSeconds / this.totalFlightSeconds);
+        if (progress < 0.1) {
+          this.currentAltitude += 300; this.currentSpeed += 80;
+        } else if (progress > 0.9) {
+          this.currentAltitude -= 300; this.currentSpeed -= 80;
+        } else {
+          this.currentAltitude = 30000 + Math.floor(Math.random() * 500 - 250);
+          this.currentSpeed = 850 + Math.floor(Math.random() * 20 - 10);
+        }
       } else {
         clearInterval(this.timerId);
         this.coinBalance += item.expectedProfit;
-        let mins = Math.floor(durationMs / 60000);
+        let mins = Math.floor(this.totalFlightSeconds / 60);
         this.totalFocusMinutes += mins;
         if (!this.unlockedRoutes.includes(this.activeFlight.destIata)) {
           this.unlockedRoutes.push(this.activeFlight.destIata);
@@ -658,26 +807,64 @@ struct FlightConcentrator {
   }
 
   @Builder FlyingView() {
-    Column({ space: 40 }) {
-      Text(`执飞 CAN ➔ ${this.activeFlight.destIata}`).fontSize(28).fontWeight(FontWeight.Bold).margin({ top: 100 }).fontColor('#00E5FF')
-      Text(`[任务] ${this.activeFlight.taskType}`).fontSize(20).fontColor('#FFF')
-      Text(`[机型] ${this.activeFlight.planeModel}`).fontSize(16).fontColor('#FFD700')
+    Column() {
+      Column({ space: 8 }) {
+        Text(this.activeFlight.taskType).fontSize(16).fontColor('rgba(255,255,255,0.5)').margin({ top: 60 })
+        Row({ space: 15 }) {
+          Text('CAN').fontSize(36).fontWeight(FontWeight.Bold).fontColor('#FFF')
+          Text('✈').fontSize(24).fontColor('rgba(255,255,255,0.4)')
+          Text(this.activeFlight.destIata).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#FFF')
+        }
+        Text(this.activeFlight.planeModel).fontSize(14).fontColor('#FFF').backgroundColor('rgba(255,255,255,0.1)').padding({ left: 10, right: 10, top: 4, bottom: 4 }).borderRadius(10).margin({ top: 10 })
+      }.width('100%').alignItems(HorizontalAlign.Center)
+
+      Blank()
+
+      Column({ space: 10 }) {
+        Row() {
+          Text('Departure').fontSize(12).fontColor('rgba(255,255,255,0.5)')
+          Blank()
+          Text('Arrival').fontSize(12).fontColor('rgba(255,255,255,0.5)')
+        }.width('85%')
+
+        Stack({ alignContent: Alignment.Start }) {
+          Divider().width('100%').color('rgba(255,255,255,0.2)').strokeWidth(4)
+          Divider().width(`${((this.totalFlightSeconds - this.remainingSeconds) / this.totalFlightSeconds) * 100}%`)
+            .color('#00E5FF').strokeWidth(4)
+          Text('✈️').fontSize(20).margin({ left: `calc(${((this.totalFlightSeconds - this.remainingSeconds) / this.totalFlightSeconds) * 100}% - 10px)` }).offset({ y: -12 })
+        }.width('85%').height(30)
+      }.width('100%').alignItems(HorizontalAlign.Center)
+
+      Blank()
 
       Stack() {
-        Circle({ width: 280, height: 280 }).fill('transparent').stroke('rgba(255,255,255,0.1)').strokeWidth(15)
-        Circle({ width: 280, height: 280 }).fill('transparent').stroke('#00E5FF').strokeWidth(15).strokeDashArray([10, 20])
-        Column() {
-          Text(this.formatRemainingTime()).fontSize(55).fontWeight(FontWeight.Lighter).fontColor('#FFF')
-          Text('距降落还有').fontSize(16).fontColor('rgba(255,255,255,0.6)').margin({ top: 10 })
+        Circle({ width: 260, height: 260 }).fill('transparent').stroke('rgba(255,255,255,0.05)').strokeWidth(1)
+        Column({ space: 5 }) {
+          Text(this.formatRemainingTime()).fontSize(55).fontWeight(FontWeight.Regular).fontColor('#FFF').fontFeature('"tnum" 1')
+          Text('REMAINING TIME').fontSize(12).fontColor('rgba(255,255,255,0.3)').letterSpacing(2)
         }
       }
 
-      Button('紧急返航 (无收益)').width('70%').height(65).backgroundColor('rgba(255, 77, 79, 0.8)').borderRadius(30).fontColor('#FFF').margin({ top: 40 })
+      Row() {
+        Column() {
+          Text('ALTITUDE').fontSize(10).fontColor('rgba(255,255,255,0.4)')
+          Text(`${Math.max(0, this.currentAltitude)} FT`).fontSize(18).fontColor('#FFF').fontFeature('"tnum" 1')
+        }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+        Divider().vertical(true).height(30).color('rgba(255,255,255,0.1)')
+        Column() {
+          Text('SPEED').fontSize(10).fontColor('rgba(255,255,255,0.4)')
+          Text(`${Math.max(0, this.currentSpeed)} KTS`).fontSize(18).fontColor('#FFF').fontFeature('"tnum" 1')
+        }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+      }.width('80%').margin({ top: 40 })
+
+      Blank()
+
+      Button('紧急迫降 (中止且无收益)').width('80%').height(60).backgroundColor('rgba(255, 77, 79, 0.15)')
+        .border({ width: 1, color: 'rgba(255, 77, 79, 0.3)' }).borderRadius(30).fontColor('#FF4D4F').margin({ bottom: 50 })
         .onClick(() => { clearInterval(this.timerId); this.currentPage = 4; })
     }.width('100%').height('100%')
   }
 
-  // 优化点：商店 UI 重构，完整呈现 Logo 并右对齐机型，点击进入详情弹窗
   @Builder ShopView() {
     Column() {
       Row() {
@@ -721,16 +908,13 @@ struct FlightConcentrator {
       Column() {
         Text(title).fontColor('rgba(255,255,255,0.6)').margin({ left: 10, bottom: 10, top: 10 }).width('100%')
         ForEach(ALL_PLANES.filter(p => p.brand === brand), (p: Plane) => {
-          // 点击进入机型百科详情页
           Row({ space: 15 }) {
-            // 左侧完整 Logo 显示
             Image(p.logoUrl)
               .width(80).height(45).objectFit(ImageFit.Contain)
               .backgroundColor('rgba(255,255,255,0.9)').borderRadius(10).padding(5)
 
             Blank()
 
-            // 右侧机型文字对齐
             Column() {
               Text(p.model).fontColor('#FFF').fontWeight(FontWeight.Bold).fontSize(20).textAlign(TextAlign.End)
               if (this.ownedPlanes.includes(p.model)) {
@@ -743,7 +927,6 @@ struct FlightConcentrator {
           .width('92%').padding(18).margin({ bottom: 12 }).glassEffect()
           .linearGradient({ direction: GradientDirection.Right, colors: [[p.gradient[0], 0.0], [p.gradient[1], 1.0]] })
           .onClick(() => {
-            // 打开专门的交互弹窗进行查看与购买决策
             this.introDialog = new CustomDialogController({
               builder: PlaneIntroDialog({
                 plane: p,
@@ -806,23 +989,37 @@ struct FlightConcentrator {
 
   @Builder ProfileView() {
     Column({ space: 25 }) {
-      this.StepHeader('航空公司简报', 0)
+      this.StepHeader('系统简报', 0)
 
       Column({ space: 20 }) {
-        Row() { Text('总专注时长').fontColor('rgba(255,255,255,0.8)'); Blank(); Text(`${this.totalFocusMinutes} 分钟`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(18) }.width('100%')
-        Row() { Text('已开通航线').fontColor('rgba(255,255,255,0.8)'); Blank(); Text(`${this.unlockedRoutes.length} 条`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(18) }.width('100%')
-        Row() { Text('机队规模').fontColor('rgba(255,255,255,0.8)'); Blank(); Text(`${this.ownedPlanes.length} 架`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(18) }.width('100%')
-        Row() { Text('枢纽等级').fontColor('rgba(255,255,255,0.8)'); Blank(); Text(`白云枢纽 Lv.${this.airportLevel}`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(18) }.width('100%')
+        Row() { Text('总飞行专注').fontColor('rgba(255,255,255,0.6)'); Blank(); Text(`${this.totalFocusMinutes} 分钟`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(16) }.width('100%')
+        Row() { Text('通航覆盖率').fontColor('rgba(255,255,255,0.6)'); Blank(); Text(`${this.unlockedRoutes.length} 条航线`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(16) }.width('100%')
+        Row() { Text('机队总规模').fontColor('rgba(255,255,255,0.6)'); Blank(); Text(`${this.ownedPlanes.length} 架飞机`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(16) }.width('100%')
+        Row() { Text('总部基建').fontColor('rgba(255,255,255,0.6)'); Blank(); Text(`Lv.${this.airportLevel}`).fontWeight(FontWeight.Bold).fontColor('#FFF').fontSize(16) }.width('100%')
       }.width('90%').padding(30).glassEffect()
 
-      Text('已解锁航线图谱').width('90%').fontWeight(FontWeight.Bold).fontColor('#FFF').margin({ top: 10 })
+      Text('飞行足迹').width('90%').fontWeight(FontWeight.Bold).fontColor('rgba(255,255,255,0.5)').fontSize(14).margin({ top: 10 })
       Flex({ wrap: FlexWrap.Wrap }) {
         ForEach(this.unlockedRoutes, (iata: string) => {
-          Text(`CAN ➔ ${iata}`)
-            .padding(10).margin(6).backgroundColor('rgba(0, 229, 255, 0.2)').fontColor('#00E5FF')
-            .border({ width: 1, color: '#00E5FF' }).borderRadius(10).fontSize(14)
+          Text(iata)
+            .padding({ left: 15, right: 15, top: 8, bottom: 8 }).margin(6)
+            .backgroundColor('rgba(0, 229, 255, 0.1)').fontColor('#00E5FF')
+            .border({ width: 1, color: 'rgba(0, 229, 255, 0.5)' }).borderRadius(16).fontSize(14)
         })
       }.width('90%')
+
+      Blank()
+
+      Column({ space: 10 }) {
+        Text('危险操作').fontColor('rgba(255, 77, 79, 0.8)').fontSize(12)
+        Button('破产清算 (注销并重置所有数据)')
+          .width('90%').height(60).backgroundColor('rgba(255, 77, 79, 0.15)')
+          .border({ width: 1, color: 'rgba(255, 77, 79, 0.3)' }).borderRadius(30).fontColor('#FF4D4F')
+          .onClick(() => {
+            this.resetSystem();
+          })
+      }.width('100%').margin({ bottom: 40 }).alignItems(HorizontalAlign.Center)
+
     }.height('100%')
   }
 
