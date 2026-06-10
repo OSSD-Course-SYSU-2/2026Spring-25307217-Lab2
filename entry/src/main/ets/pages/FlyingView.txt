@@ -1,0 +1,200 @@
+﻿  @Builder FlyingView() {
+    Column() {
+      Column({ space: 8 }) {
+        Text(this.activeFlight.taskType).fontSize(16).fontColor('rgba(255,255,255,0.5)').margin({ top: 60 })
+        Row({ space: 15 }) {
+          Text('CAN').fontSize(36).fontWeight(FontWeight.Bold).fontColor('#FFF')
+          Text('鉁?).fontSize(24).fontColor('rgba(255,255,255,0.4)')
+          Text(this.activeFlight.destIata).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#FFF')
+        }
+        Text(this.activeFlight.planeModel).fontSize(14).fontColor('#FFF').backgroundColor('rgba(255,255,255,0.1)').padding({ left: 10, right: 10, top: 4, bottom: 4 }).borderRadius(10).margin({ top: 10 })
+        if (this.activeCoFlight && this.activeCoFlight.status === 'flying') {
+          Text('鍏变韩鑸彮: ' + this.activeCoFlight!.flightNumber).fontSize(13).fontColor('#FFD700')
+            .backgroundColor('rgba(255,215,0,0.15)').padding({ left: 10, right: 10, top: 4, bottom: 4 }).borderRadius(10).margin({ top: 6 })
+          Text('浼欎即浠诲姟').fontSize(11).fontColor('rgba(255,255,255,0.4)').margin({ top: 12 })
+          ForEach(Object.keys(this.activeCoFlight.participantTasks), (uid: string) => {
+            Text(uid + ': ' + this.activeCoFlight!.participantTasks[uid]).fontSize(12).fontColor('rgba(255,255,255,0.6)')
+              .margin({ top: 2 })
+          })
+        }
+      }.width('100%').alignItems(HorizontalAlign.Center)
+
+      Blank()
+
+      Column({ space: 10 }) {
+        Row() {
+          Text('Departure').fontSize(12).fontColor('rgba(255,255,255,0.5)')
+          Blank()
+          Text('Arrival').fontSize(12).fontColor('rgba(255,255,255,0.5)')
+        }.width('85%')
+
+        Stack({ alignContent: Alignment.Start }) {
+          Divider().width('100%').color('rgba(255,255,255,0.2)').strokeWidth(4)
+          Divider().width(`${((this.totalFlightSeconds - this.remainingSeconds) / this.totalFlightSeconds) * 100}%`)
+            .color('#00E5FF').strokeWidth(4)
+          Text('鉁堬笍').fontSize(20).margin({ left: `calc(${((this.totalFlightSeconds - this.remainingSeconds) / this.totalFlightSeconds) * 100}% - 10px)` }).offset({ y: -12 })
+        }.width('85%').height(30)
+      }.width('100%').alignItems(HorizontalAlign.Center)
+
+      Blank()
+
+      Stack() {
+      // Full-screen safe area expansion
+      Column().width('100%').height('100%').expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
+        Circle({ width: 260, height: 260 }).fill('transparent').stroke('rgba(255,255,255,0.05)').strokeWidth(1)
+        Column({ space: 5 }) {
+          Text(this.formatRemainingTime()).fontSize(55).fontWeight(FontWeight.Regular).fontColor('#FFF').fontFeature('"tnum" 1')
+          Text('REMAINING TIME').fontSize(12).fontColor('rgba(255,255,255,0.3)').letterSpacing(2)
+        }
+      }
+
+      Row() {
+        Column() {
+          Text('ALTITUDE').fontSize(10).fontColor('rgba(255,255,255,0.4)')
+          Text(`${Math.max(0, this.currentAltitude)} FT`).fontSize(18).fontColor('#FFF').fontFeature('"tnum" 1')
+        }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+        Divider().vertical(true).height(30).color('rgba(255,255,255,0.1)')
+        Column() {
+          Text('SPEED').fontSize(10).fontColor('rgba(255,255,255,0.4)')
+          Text(`${Math.max(0, this.currentSpeed)} KTS`).fontSize(18).fontColor('#FFF').fontFeature('"tnum" 1')
+        }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+      }.width('80%').margin({ top: 40 })
+
+      Blank()
+
+      if (this.sysUsername === '鐧介弓') {
+        Button('鈿?璺宠繃涓撴敞 (鍗冲埢缁撶畻)').width('80%').height(55)
+          .backgroundColor('rgba(255, 215, 0, 0.2)')
+          .border({ width: 1, color: 'rgba(255, 215, 0, 0.5)' }).borderRadius(30)
+          .fontColor('#FFD700').fontWeight(FontWeight.Bold).margin({ top: 15 })
+          .onClick(() => {
+            clearInterval(this.timerId);
+            let mins = Math.floor(this.totalFlightSeconds / 60);
+            let newRoute = !this.unlockedRoutes.includes(this.activeFlight.destIata);
+            this.coinBalance += this.activeFlight.expectedProfit;
+            this.totalFocusMinutes += mins;
+            if (newRoute) {
+              this.unlockedRoutes.push(this.activeFlight.destIata);
+            }
+            let destAirport = ALL_AIRPORTS.find(a => a.iata === this.activeFlight.destIata);
+            // 鏇存柊褰撳墠鏈哄満浣嶇疆
+            this.currentAirport = this.activeFlight.destIata;
+            this.currentAirportName = this.activeFlight.destName;
+            this.currentAirportLng = destAirport?.lng || 113.29;
+            this.currentAirportLat = destAirport?.lat || 23.39;
+            this.focusSettlementData = {
+              taskType: this.activeFlight.taskType,
+              destIata: this.activeFlight.destIata,
+              destName: this.activeFlight.destName,
+              planeModel: this.activeFlight.planeModel,
+              profit: this.activeFlight.expectedProfit,
+              focusMinutes: mins,
+              newRoute: newRoute,
+              originIata: this.currentAirport,
+              originName: this.currentAirportName,
+              destLng: destAirport?.lng || 113.29,
+              destLat: destAirport?.lat || 23.39,
+              originLng: this.currentAirportLng,
+              originLat: this.currentAirportLat
+            };
+            this.scheduleList = this.scheduleList.filter(i => i.id !== this.activeFlight.id);
+            this.saveAllData();
+            this.currentPage = 13;
+          })
+      }
+
+      if (this.sysUsername !== '鐧介弓') {
+        Button('绱ф€ヨ揩闄?).width('80%').height(60).backgroundColor('rgba(255, 77, 79, 0.15)')
+          .border({ width: 1, color: 'rgba(255, 77, 79, 0.3)' }).borderRadius(30).fontColor('#FF4D4F').margin({ bottom: 50 })
+          .onClick(() => {
+            AlertDialog.show({
+              title: '纭绱ф€ヨ揩闄嶏紵',
+              message: '鏈椋炶鏃堕暱灏嗕笉璁″叆浠讳綍缁熻鎶ヨ〃',
+              autoCancel: true,
+              alignment: DialogAlignment.Center,
+              primaryButton: {
+                value: '纭杩檷',
+                fontColor: '#FF4D4F',
+                action: () => {
+                  clearInterval(this.timerId);
+                  this.timerId = -1;
+                  this.currentPage = 0;
+                }
+              },
+              secondaryButton: {
+                value: '鍙栨秷',
+                fontColor: '#AAA',
+                action: () => {}
+              }
+            });
+          })
+      }
+    }.width('100%').height('100%')
+  }
+
+  @Builder ShopView() {
+    Column() {
+      Row() {
+        Button('鈫?).width(45).height(45).backgroundColor('rgba(255,255,255,0.15)').fontColor('#FFF').borderRadius(12).onClick(() => this.currentPage = 0)
+        Text('鑸┖鍟嗗簵').fontSize(24).fontWeight(FontWeight.Bold).fontColor('#FFF').margin({ left: 15 })
+        Blank()
+        Text(`馃挵 ${this.coinBalance}`).fontColor('#FFD700').fontSize(18).fontWeight(FontWeight.Bold)
+      }.width('100%').padding(25).margin({ top: 20 })
+
+      List({ space: 20 }) {
+        ListItem() { Text('馃洭 绻佸繖鏋㈢航瑙ｉ攣').fontSize(20).fontWeight(FontWeight.Bold).fontColor('#FFF').margin({ left: 15 }) }
+        ForEach(ALL_AIRPORTS.filter(a => a.isPremium), (apt: Airport) => {
+          ListItem() {
+            Row() {
+              Text(`${apt.name} (${apt.iata})`).layoutWeight(1).fontColor('#FFF').fontSize(16)
+              Button(this.unlockedAirports.includes(apt.iata) ? '宸叉嫢鏈? : '馃挵 500')
+                .backgroundColor(this.unlockedAirports.includes(apt.iata) ? 'rgba(255,255,255,0.2)' : '#00E5FF')
+                .fontColor(this.unlockedAirports.includes(apt.iata) ? '#CCC' : '#000')
+                .enabled(!this.unlockedAirports.includes(apt.iata))
+                .onClick(() => {
+                  this.targetPurchaseName = `${apt.name} (${apt.iata})`;
+                  this.targetPurchasePrice = 500;
+                  this.targetPurchaseType = 'airport';
+                  this.targetPurchaseId = apt.iata;
+                  this.currentPage = 8;
+                })
+            }.width('92%').padding(20).glassEffect()
+          }
+        })
+
+        ListItem() { Text('鉁堬笍 鏈洪槦鎵╁缓鐩綍').fontSize(20).fontWeight(FontWeight.Bold).fontColor('#FFF').margin({ left: 15, top: 20 }) }
+        this.ShopGroup('涓浗鍟嗛 COMAC', 'COMAC')
+        this.ShopGroup('娉㈤煶 Boeing', 'Boeing')
+        this.ShopGroup('绌哄 Airbus', 'Airbus')
+      }.layoutWeight(1).width('100%').alignListItem(ListItemAlign.Center)
+    }.height('100%')
+  }
+
+  @Builder ShopGroup(title: string, brand: string) {
+    ListItem() {
+      Column() {
+        Text(title).fontColor('rgba(255,255,255,0.6)').margin({ left: 10, bottom: 10, top: 10 }).width('100%')
+        ForEach(ALL_PLANES.filter(p => p.brand === brand), (p: Plane) => {
+          Row({ space: 15 }) {
+            Image(p.logoUrl)
+              .width(80).height(45).objectFit(ImageFit.Contain)
+              .backgroundColor('rgba(255,255,255,0.9)').borderRadius(10).padding(5)
+
+            Blank()
+
+            Column() {
+              Text(p.model).fontColor('#FFF').fontWeight(FontWeight.Bold).fontSize(20).textAlign(TextAlign.End)
+              if (this.ownedPlanes.includes(p.model)) {
+                Text('鉁?宸插湪搴?).fontSize(12).fontColor('#4CAF50').margin({ top: 4 })
+              } else {
+                Text(`馃挵 ${p.price}`).fontSize(14).fontColor('#FFD700').margin({ top: 4 })
+              }
+            }.alignItems(HorizontalAlign.End)
+          }
+          .width('92%').padding(18).margin({ bottom: 12 }).glassEffect()
+          .linearGradient({ direction: GradientDirection.Right, colors: [[p.gradient[0], 0.0], [p.gradient[1], 1.0]] })
+          .onClick(() => {
+            this.introDialog = new CustomDialogController({
+              builder: PlaneIntroDialog({
+                plane: p,

@@ -1,0 +1,20 @@
+﻿import { preferences, distributedDataObject } from '@kit.ArkData';
+import { common } from '@kit.AbilityKit';
+import { webview } from '@kit.ArkWeb';
+import { util } from '@kit.ArkTS';
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
+
+// ==========================================
+// 鏁版嵁妯″瀷涓庡父閲忓畾涔?
+// ==========================================
+interface Airport {
+  name: string;
+  iata: string;
+  time: number;
+  isPremium: boolean;
+  lng: number;
+  lat: number;
+}
+
+interface Plane {
+  model: string;

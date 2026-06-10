@@ -1,0 +1,10 @@
+
+{
+  "src": [
+    "pages/FlightConcentrator"
+  ],
+  "window": {
+    "designWidth": 720,
+    "autoDesignWidth": true
+  }
+}
