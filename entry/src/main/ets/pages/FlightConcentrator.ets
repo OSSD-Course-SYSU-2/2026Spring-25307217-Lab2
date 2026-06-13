@@ -4,6 +4,7 @@ import { webview } from '@kit.ArkWeb';
 import { util } from '@kit.ArkTS';
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
 
+
 // ==========================================
 // 数据模型与常量定义
 // ==========================================
@@ -92,6 +93,21 @@ interface FlightRecord {
   destLng: number;
   destLat: number;
   timestamp: number;
+}
+
+interface PlanTask {
+  id: number;
+  name: string;
+  duration: number;
+}
+
+interface RoutePoint {
+  originIata: string;
+  originLng: number;
+  originLat: number;
+  destIata: string;
+  destLng: number;
+  destLat: number;
 }
 
 // ================= 满血机队数据库 (保留渐变UI) =================
@@ -558,6 +574,17 @@ struct FlightConcentrator {
   @State targetPurchasePrice: number = 0;
   @State targetPurchaseType: 'airport' | 'plane' = 'airport';
   @State targetPurchaseId: string = '';
+
+  // ================= 本地多段连飞推演 =================
+  @State planTasks: PlanTask[] = [
+    { id: Date.now(), name: '深度阅读', duration: 45 }
+  ];
+  @State plannedRoute: ScheduleItem[] = []; // 生成的连飞航线
+  @State isCalculatingRoute: boolean = false;
+  @State aiIsCalculating: boolean = false;
+  @State hasAiResult: boolean = false;
+  @State aiTargetMinutes: number = 60;
+  @State aiRecommendFlight: ScheduleItem = { id:0, taskType:'', startTime:new Date(), endTime:new Date(), originIata:'', originName:'', destIata:'', destName:'', planeModel:'', expectedProfit:0, isCoFlight:false, coFlightId:'' };
 
   // 执飞状态
   @State activeFlight: ScheduleItem = { id:0, taskType:'', startTime:new Date(), endTime:new Date(), originIata:'', originName:'', destIata:'', destName:'', planeModel:'', expectedProfit:0, isCoFlight:false, coFlightId:'' };
@@ -1055,6 +1082,77 @@ struct FlightConcentrator {
     </html>`;
   }
 
+  // 专门用于多段连飞拓扑展示的地图生成器
+  generateMultiLegMapHtml(): string {
+    let routeJson = JSON.stringify(this.plannedRoute.map((item: ScheduleItem): RoutePoint => {
+      let ori = ALL_AIRPORTS.find(a => a.iata === item.originIata) || ALL_AIRPORTS.find(a => a.iata === 'CAN');
+      let des = ALL_AIRPORTS.find(a => a.iata === item.destIata) || ALL_AIRPORTS.find(a => a.iata === 'SZX');
+      return {
+        originIata: item.originIata, originLng: ori?.lng || 113.29, originLat: ori?.lat || 23.39,
+        destIata: item.destIata, destLng: des?.lng || 113.81, destLat: des?.lat || 22.64
+      };
+    }));
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+        <style>
+            html, body, #container { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f2027;}
+            .custom-marker {
+                background: rgba(15,32,39,0.9); border: 1px solid #00E5FF; border-radius: 8px;
+                padding: 4px 8px; font-weight: bold; font-size: 12px; color: #FFF; backdrop-filter: blur(5px);
+                box-shadow: 0 4px 15px rgba(0,229,255,0.4); white-space: nowrap;
+            }
+            .start-marker { border-color: #FFD700; color: #FFD700; box-shadow: 0 4px 15px rgba(255,215,0,0.4); }
+        </style>
+        <script src="https://webapi.amap.com/maps?v=2.0&key=038b3400dd8b54da0a149c95eb9c7d42"></script>
+    </head>
+    <body>
+    <div id="container"></div>
+    <script>
+        var map = new AMap.Map('container', { zoom: 4, center: [105.0, 35.0], mapStyle: 'amap://styles/darkblue' });
+        var routeData = ${routeJson};
+
+        if (routeData && routeData.length > 0) {
+            var path = [];
+
+            // 绘制起点
+            path.push([routeData[0].originLng, routeData[0].originLat]);
+            var startMarker = new AMap.Marker({
+                position: path[0],
+                content: '<div class="custom-marker start-marker">起点: ' + routeData[0].originIata + '</div>',
+                offset: new AMap.Pixel(-30, -15), zIndex: 110
+            });
+            map.add(startMarker);
+
+            // 绘制各个途径点和终点
+            routeData.forEach(function(leg, index) {
+                var destPoint = [leg.destLng, leg.destLat];
+                path.push(destPoint);
+                var m = new AMap.Marker({
+                    position: destPoint,
+                    content: '<div class="custom-marker">第' + (index+1) + '站: ' + leg.destIata + '</div>',
+                    offset: new AMap.Pixel(-30, -15), zIndex: 100
+                });
+                map.add(m);
+            });
+
+            // 将所有点用带箭头的线连起来
+            var polyline = new AMap.Polyline({
+                path: path, strokeColor: '#00E5FF', strokeWeight: 4,
+                strokeOpacity: 0.9, lineJoin: 'round', showDir: true
+            });
+            map.add(polyline);
+            map.setFitView(null, false, [60, 60, 60, 60]); // 自动缩放视野包围整个航线
+        }
+    </script>
+    </body>
+    </html>`;
+  }
+
   // ================= 根路由渲染 =================
   build() {
     Stack() {
@@ -1098,8 +1196,219 @@ struct FlightConcentrator {
         else if (this.currentPage === 12) this.CoFlightView();
         else if (this.currentPage === 13) this.FocusSettlementView();
         else if (this.currentPage === 14) this.TrackMapView();
+        else if (this.currentPage === 15) this.AiPlannerView(); // 👈 新增：AI智能规划页面
       }.width('100%').height('100%')
     }
+  }
+
+  // ==========================================
+  // AI 智能航线规划系统
+  // ==========================================
+  // ==========================================
+  // 本地算法：多段连飞智能推演系统
+  // ==========================================
+  // ==========================================
+  // 核心功能：多段连飞智能推演系统
+  // ==========================================
+  @Builder AiPlannerView() {
+    Column() {
+      // 1. 顶部标题
+      Row() {
+        Button('← 返回').height(40).backgroundColor('rgba(255,255,255,0.15)').fontColor('#FFF')
+          .borderRadius(12).padding({ left: 15, right: 15 })
+          .onClick(() => { this.currentPage = 1; })
+        Text('SkyMind™ 连飞推演').fontSize(20).fontWeight(FontWeight.Bold).fontColor('#E040FB').margin({ left: 15 })
+      }.width('100%').padding(20).margin({ top: 20 })
+
+      List({ space: 15 }) {
+        ListItem() {
+          // 2. 任务输入区域
+          Column({ space: 15 }) {
+            Text('配置你的专注日程组合').fontColor('rgba(255,255,255,0.6)').fontSize(14).width('100%')
+
+            ForEach(this.planTasks, (task: PlanTask, index: number) => {
+              Row({ space: 10 }) {
+                Text(`${index + 1}`).fontColor('#E040FB').fontWeight(FontWeight.Bold).fontSize(16).width(20).textAlign(TextAlign.Center)
+                TextInput({ placeholder: '任务名称', text: task.name })
+                  .layoutWeight(1).height(45).backgroundColor('rgba(255,255,255,0.1)').fontColor('#FFF')
+                  .onChange(v => { task.name = v; })
+                TextInput({ placeholder: '分钟', text: task.duration.toString() })
+                  .type(InputType.Number).width(70).height(45).backgroundColor('rgba(255,255,255,0.1)').fontColor('#FFF')
+                  .onChange(v => { task.duration = parseInt(v) || 0; })
+
+                Button('✖').width(40).height(45).backgroundColor('rgba(255,77,79,0.2)').fontColor('#FF4D4F')
+                  .onClick(() => {
+                    this.planTasks = this.planTasks.filter(t => t.id !== task.id);
+                  })
+              }.width('100%')
+            })
+
+            Button('+ 追加新任务段')
+              .width('100%').height(45).backgroundColor('rgba(224, 64, 251, 0.15)')
+              .border({ width: 1, color: 'rgba(224, 64, 251, 0.4)' }).fontColor('#E040FB').borderRadius(12)
+              .onClick(() => {
+                this.planTasks.push({ id: Date.now(), name: '', duration: 60 });
+              })
+
+            Button(this.isCalculatingRoute ? '算力过载推演中...' : '执行航线推演算力 ⚡')
+              .width('100%').height(55)
+              .backgroundColor(this.isCalculatingRoute ? 'rgba(224, 64, 251, 0.3)' : '#E040FB')
+              .fontColor(this.isCalculatingRoute ? '#E040FB' : '#FFF')
+              .fontWeight(FontWeight.Bold).borderRadius(16).margin({ top: 10 })
+              .enabled(!this.isCalculatingRoute && this.planTasks.length > 0)
+              .onClick(() => this.generateLocalRouteChain())
+          }.width('100%').padding(20).glassEffect()
+        }
+
+        // 3. 连飞推演结果展示区
+        if (this.plannedRoute.length > 0 && !this.isCalculatingRoute) {
+          ListItem() {
+            Column({ space: 15 }) {
+              Row() {
+                Text('🗺️ 航线拓扑图已生成').fontColor('#FFF').fontWeight(FontWeight.Bold).fontSize(18)
+              }.width('100%')
+
+              // 嵌套地图展示连线
+              Web({ src: '', controller: this.webController }).width('100%').height(220).borderRadius(16)
+                .onControllerAttached(() => {
+                  this.webController.loadData(this.generateMultiLegMapHtml(), "text/html", "UTF-8", "https://webapi.amap.com", "https://webapi.amap.com");
+                })
+
+              // 展示具体的排班序列
+              Column({ space: 10 }) {
+                ForEach(this.plannedRoute, (flight: ScheduleItem, idx: number) => {
+                  Row() {
+                    Text(`${idx + 1}`).width(24).height(24).backgroundColor('#E040FB').fontColor('#FFF')
+                      .borderRadius(12).textAlign(TextAlign.Center).fontSize(12).fontWeight(FontWeight.Bold)
+                    Column({ space: 4 }) {
+                      Text(`${flight.originIata} ➔ ${flight.destIata}`).fontWeight(FontWeight.Bold).fontColor('#FFF')
+                      Text(`${flight.taskType} | 收益 💰${flight.expectedProfit}`).fontColor('rgba(255,255,255,0.6)').fontSize(12)
+                    }.alignItems(HorizontalAlign.Start).margin({ left: 10 })
+                    Blank()
+                    Text(flight.planeModel).fontColor('#FFD700').fontSize(12).backgroundColor('rgba(255,215,0,0.15)').padding(4).borderRadius(6)
+                  }.width('100%').padding(12).backgroundColor('rgba(255,255,255,0.05)').borderRadius(12)
+                })
+              }.width('100%')
+
+              Button('确认！一键写入调度表起飞')
+                .width('100%').height(55).backgroundColor('#00E5FF').fontColor('#000').fontWeight(FontWeight.Bold).borderRadius(16).margin({ top: 10 })
+                .onClick(() => {
+                  for(let i=0; i<this.plannedRoute.length; i++) {
+                    this.scheduleList.push(this.plannedRoute[i]);
+                  }
+                  this.plannedRoute = []; // 写入完毕后清空面板
+                  this.saveAllData();
+                  this.currentPage = 4; // 瞬间传送至航班调度表
+                })
+            }.width('100%').padding(20).glassEffect().margin({ bottom: 50 })
+          }
+        }
+      }.layoutWeight(1).width('92%').alignListItem(ListItemAlign.Center).scrollBar(BarState.Off)
+    }.width('100%').height('100%')
+  }
+
+  // 核心算法：多段连飞闭环计算
+  generateLocalRouteChain() {
+    this.isCalculatingRoute = true;
+    this.plannedRoute = [];
+
+    // 增加 800ms 的动画延迟感，让系统显得在深度推演
+    setTimeout(() => {
+      let simulatedCurrentLoc = this.currentAirport;
+      let simulatedCurrentName = this.currentAirportName;
+      let accumulatedTime = 0;
+      let tempRoute: ScheduleItem[] = [];
+
+      for (let i = 0; i < this.planTasks.length; i++) {
+        let task = this.planTasks[i];
+        if (!task.name || task.duration <= 0) continue;
+
+        let candidates = ALL_AIRPORTS.filter(a => a.time > 0 && a.iata !== simulatedCurrentLoc && Math.abs(a.time - task.duration) <= 40);
+        if (candidates.length === 0) {
+          candidates = ALL_AIRPORTS.filter(a => a.iata !== simulatedCurrentLoc).sort((a, b) => Math.abs(a.time - task.duration) - Math.abs(b.time - task.duration)).slice(0, 5);
+        }
+
+        let dest = candidates[Math.floor(Math.random() * candidates.length)];
+        let myPlanesData = ALL_PLANES.filter(p => this.getSafePlanes().map(sp => sp.model).includes(p.model));
+        let bestPlane = myPlanesData.sort((a, b) => b.multiplier - a.multiplier)[0] || ALL_PLANES[0];
+        let profit = Math.floor(dest.time * bestPlane.multiplier);
+
+        let now = new Date();
+        let startTime = new Date(now.getTime() + accumulatedTime * 60000);
+        accumulatedTime += dest.time;
+        let endTime = new Date(now.getTime() + accumulatedTime * 60000);
+
+        tempRoute.push({
+          id: Date.now() + i,
+          taskType: task.name,
+          startTime: startTime,
+          endTime: endTime,
+          originIata: simulatedCurrentLoc,
+          originName: simulatedCurrentName,
+          destIata: dest.iata,
+          destName: dest.name,
+          planeModel: bestPlane.model,
+          expectedProfit: profit,
+          isCoFlight: false,
+          coFlightId: ''
+        });
+
+        // 将当前航段的目的地，作为下一段的起点
+        simulatedCurrentLoc = dest.iata;
+        simulatedCurrentName = dest.name;
+      }
+
+      this.plannedRoute = tempRoute;
+      this.isCalculatingRoute = false; // 计算完毕，出结果
+    }, 800);
+  }
+
+  // 核心 AI 规划算法
+  executeAiPlanning() {
+    this.aiIsCalculating = true;
+    this.hasAiResult = false;
+    this.hasAiResult = true;
+
+    // 模拟 AI 计算的延迟动画感
+    setTimeout(() => {
+      // 1. 寻找时长最匹配的目的地
+      // 允许有 ±40 分钟的误差，优先找离目标时长最接近的
+      let candidates = ALL_AIRPORTS.filter(a => a.time > 0 && Math.abs(a.time - this.aiTargetMinutes) <= 40);
+      if (candidates.length === 0) {
+        // 如果严格条件没找到，退化为寻找全局最接近的
+        candidates = ALL_AIRPORTS.slice().sort((a, b) => Math.abs(a.time - this.aiTargetMinutes) - Math.abs(b.time - this.aiTargetMinutes)).slice(0, 5);
+      }
+
+      // 在候选者中随机挑一个，增加每次运算的不可预测感
+      let bestDest = candidates[Math.floor(Math.random() * candidates.length)];
+
+      // 2. 从用户的机库中，寻找该航线下收益系数最高的飞机
+      let myPlanesData = ALL_PLANES.filter(p => this.getSafePlanes().map(sp => sp.model).includes(p.model));
+      let bestPlane = myPlanesData.sort((a, b) => b.multiplier - a.multiplier)[0]; // 降序取第一
+
+      // 3. 计算收益和时间
+      let profit = Math.floor(bestDest.time * bestPlane.multiplier);
+      let now = new Date();
+      let endTime = new Date(now.getTime() + bestDest.time * 60000);
+
+      // 4. 生成虚拟排班对象
+      this.aiRecommendFlight = {
+        id: Date.now(),
+        taskType: `AI 智能分配任务 (专注 ${this.aiTargetMinutes}min)`,
+        startTime: now,
+        endTime: endTime,
+        originIata: this.currentAirport,
+        originName: this.currentAirportName,
+        destIata: bestDest.iata,
+        destName: bestDest.name,
+        planeModel: bestPlane.model,
+        expectedProfit: profit,
+        isCoFlight: false,
+        coFlightId: ''
+      };
+
+      this.aiIsCalculating = false;
+    }, 1200); // 1.2秒延迟营造“AI思考中”的感觉
   }
 
   // ================= 模块化：认证系统入口 =================
@@ -1259,7 +1568,7 @@ struct FlightConcentrator {
               this.DataStat('在役机队', `✈️ ${this.ownedPlanes.length}`)
               this.DataStat('通航城市', `📍 ${this.unlockedRoutes.length}`)
             }.width('100%').justifyContent(FlexAlign.SpaceBetween)
-          }.width('100%').padding(35).glassEffect()
+          }.glassEffect().width('100%').padding(35)
         }
 
         // 👉 右半区 / 手机下半区：功能菜单矩阵
@@ -1336,7 +1645,18 @@ struct FlightConcentrator {
         }.padding(15)
       }.width('92%').glassEffect()
       Blank()
-      Button('下一步：设定任务').width('90%').height(65).backgroundColor('#00E5FF').fontColor('#000').borderRadius(20).fontWeight(FontWeight.Bold).margin({ bottom: 50 }).onClick(() => this.currentPage = 2)
+      // 👇 修复：这是全新的连飞系统入口，不再调用旧变量 👇
+      Button('✨ 唤醒智能连飞推演系统 ✨')
+        .width('90%').height(55).borderRadius(20)
+        .backgroundColor('rgba(156, 39, 176, 0.2)')
+        .border({ width: 1, color: 'rgba(156, 39, 176, 0.5)' })
+        .fontColor('#E040FB').fontWeight(FontWeight.Bold).margin({ bottom: 15 })
+        .onClick(() => {
+          this.plannedRoute = []; // 清空上一次的推演路线
+          this.currentPage = 15;  // 跳转到多段推演页面
+        })
+
+      Button('下一步：手动设定任务').width('90%').height(65).backgroundColor('#00E5FF').fontColor('#000').borderRadius(20).fontWeight(FontWeight.Bold).margin({ bottom: 50 }).onClick(() => this.currentPage = 2)
     }.height('100%')
   }
 
@@ -1749,9 +2069,7 @@ struct FlightConcentrator {
 
   @Builder FlyingView() {
     Column() {
-      // ==========================================
-      // 1. 顶部：航线与航班状态 (固定)
-      // ==========================================
+      // 1. 顶部：航线与航班状态 (固定高度，不被压缩)
       Column({ space: 8 }) {
         Text((this.activeCoFlight && this.activeCoFlight.status === 'flying') ? '共享航班' : this.activeFlight.taskType).fontSize(16).fontColor('rgba(255,255,255,0.5)').margin({ top: 60 })
         Row({ space: 15 }) {
@@ -1766,13 +2084,12 @@ struct FlightConcentrator {
             .backgroundColor('rgba(255,215,0,0.15)').padding({ left: 10, right: 10, top: 4, bottom: 4 }).borderRadius(10).margin({ top: 6 })
           Text('伙伴任务').fontSize(11).fontColor('rgba(255,255,255,0.4)').margin({ top: 12 })
           ForEach(Object.keys(this.activeCoFlight.participantTasks), (uid: string) => {
-            Text(uid + ': ' + this.activeCoFlight!.participantTasks[uid]).fontSize(12).fontColor('rgba(255,255,255,0.6)')
-              .margin({ top: 2 })
+            Text(uid + ': ' + this.activeCoFlight!.participantTasks[uid]).fontSize(12).fontColor('rgba(255,255,255,0.6)').margin({ top: 2 })
           })
         }
       }.width('100%').alignItems(HorizontalAlign.Center)
 
-      // 使用 margin 替代 Blank，确保进度条离顶部的距离是固定的
+      // 2. 进度条区域 (固定高度)
       Column({ space: 10 }) {
         Row() {
           Text('Departure').fontSize(12).fontColor('rgba(255,255,255,0.5)')
@@ -1788,12 +2105,9 @@ struct FlightConcentrator {
         }.width('85%').height(30)
       }.width('100%').alignItems(HorizontalAlign.Center).margin({ top: 30 })
 
-      // 第一个弹性空间：推开上半部分和倒计时
-      Blank()
 
-      // ==========================================
-      // 2. 中间：倒计时与速度仪表盘 (整体打包居中)
-      // ==========================================
+      // 👇 3. 中间弹性核心区：倒计时与仪表盘 👇
+      // 这个 Column 会乖乖填满中间的空隙，内容在中间垂直居中
       Column() {
         Stack() {
           Circle({ width: 260, height: 260 }).fill('transparent').stroke('rgba(255,255,255,0.05)').strokeWidth(1)
@@ -1814,14 +2128,13 @@ struct FlightConcentrator {
             Text(`${Math.max(0, this.currentSpeed)} KTS`).fontSize(18).fontColor('#FFF').fontFeature('"tnum" 1')
           }.alignItems(HorizontalAlign.Center).layoutWeight(1)
         }.width('80%').margin({ top: 40 })
-      }.width('100%').alignItems(HorizontalAlign.Center)
+      }
+      .width('100%')
+      .layoutWeight(1) // 👈 绝对杀手锏：接管所有剩余空间，不再硬撑
+      .justifyContent(FlexAlign.Center) // 让里面的圆圈和仪表盘在剩余空间里居中
 
-      // 第二个弹性空间：推开仪表盘和底部按钮
-      Blank()
 
-      // ==========================================
-      // 3. 底部：操作按钮 (固定在底侧)
-      // ==========================================
+      // 4. 底部：操作按钮 (固定在底侧，绝对不会再被挤出去)
       Column() {
         if (this.sysUsername === '白鹭') {
           Button('⚡ 跳过专注 (即刻结算)').width('80%').height(55)
@@ -1911,7 +2224,7 @@ struct FlightConcentrator {
               });
             })
         }
-      }.margin({ bottom: 50 }) // 底部留白，防挡条
+      }.margin({ bottom: 50 })
 
     }.width('100%').height('100%')
   }
